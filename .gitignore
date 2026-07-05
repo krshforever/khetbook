@@ -1,0 +1,48 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+.output
+.vinxi
+.tanstack/**
+.nitro
+*.local
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+# Lovable workspace (not tracked)
+.lovable/
+
+# Internal documentation and agent files
+CONTEXT.md
+DECISIONS.md
+CODEBASE_MAP.md
+TASKS.md
+PROJECT_STATE.md
+AGENTS.md
+
+# GitHub workflows (handled via Web UI to bypass PAT token limits)
+.github/workflows/
+
