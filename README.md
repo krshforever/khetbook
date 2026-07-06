@@ -25,7 +25,7 @@ Khetbook is an aspirational, fully open-source project — built so that elder t
 
 ### Khata Ledger
 
-- Per-farmer balance with **dynamic UPI QR** (`upi://pay?pa=…&am=<pending>&tn=Tractor_Hisaab_<name>`).
+- Per-farmer balance with **dynamic P2P UPI QR** (`upi://pay?pa=…&cu=INR`).
 - **WhatsApp send dialog** — pick 3 / 6 / 12 month range, toggle table-format ledger inline, or attach a full **PDF bill** generated on-device via Web Share API.
 - Payment logging, edit/delete via 3-dot menus.
 - Farmer-level filter & sort by landowner.
@@ -49,7 +49,7 @@ Khetbook is an aspirational, fully open-source project — built so that elder t
 - Backup / Restore JSON + Export full account PDF (per-farmer, payments, diesel, profit).
 - Batch entry — paste many lines from your old diary at once.
 - **Offline Data Recovery:** Automatic background synchronization writes backups to the device's public `Documents/` folder, surviving app uninstalls and manual storage clears.
-- **Auto-SMS Reminders:** Toggle to automatically send silent background SMS text updates to farmers when new work entries are saved, complete with itemized transaction totals and UPI deep payment links.
+- **Auto-SMS Reminders:** Toggle to automatically send silent background SMS text updates to farmers when new work entries are saved, complete with itemized transaction totals, UPI deep payment links, and an **in-app SMS history log dashboard** tracking success/failure delivery states.
 - **Update checker** — automatically checks for updates on startup, displaying a dialog modal to download the new APK if a newer version is released on GitHub.
 - **Daily reminder** notifications (Android via Capacitor LocalNotifications; web Notification API fallback) — 10 randomised polite presets.
 
