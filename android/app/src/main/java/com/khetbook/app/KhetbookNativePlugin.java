@@ -51,7 +51,7 @@ public class KhetbookNativePlugin extends Plugin {
     }
 
     @PermissionCallback
-    private void smsCallback(PluginCall call) {
+    public void smsCallback(PluginCall call) {
         if (getPermissionState("sms") == com.getcapacitor.PermissionState.GRANTED) {
             String phone = call.getString("phone");
             String message = call.getString("message");

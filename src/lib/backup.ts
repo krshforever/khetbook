@@ -4,6 +4,32 @@ import type { AppState } from "./types";
 
 const BACKUP_FILENAME = "KhetbookBackup/backup.json";
 
+export async function requestStoragePermission(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return true;
+
+  // On Android 13+ (API 33+), traditional public storage permissions are deprecated and auto-denied.
+  // Since we write to public documents using modern scoped storage rules, return true immediately.
+  if (Capacitor.getPlatform() === "android") {
+    const match = navigator.userAgent.match(/Android\s+([0-9.]+)/);
+    const androidVersion = match ? parseFloat(match[1]) : null;
+    if (androidVersion !== null && androidVersion >= 13) {
+      return true;
+    }
+  }
+
+  try {
+    const status = await Filesystem.checkPermissions();
+    if (status.publicStorage !== "granted") {
+      const request = await Filesystem.requestPermissions();
+      return request.publicStorage === "granted";
+    }
+    return true;
+  } catch (err) {
+    console.error("Error checking/requesting storage permission:", err);
+    return false;
+  }
+}
+
 export async function writeLocalBackup(state: AppState): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   try {
@@ -81,6 +107,7 @@ export async function readLocalBackup(): Promise<AppState | null> {
       entries: parsed.entries,
       payments: Array.isArray(parsed.payments) ? parsed.payments : [],
       fuel: Array.isArray(parsed.fuel) ? parsed.fuel : [],
+      smsLogs: Array.isArray(parsed.smsLogs) ? parsed.smsLogs : [],
     };
 
     return validatedState;

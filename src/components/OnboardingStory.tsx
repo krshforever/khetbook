@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ArrowLeft, Tractor, NotebookPen, UserRound, Heart, Languages, DatabaseBackup } from "lucide-react";
+import { ArrowRight, ArrowLeft, Tractor, NotebookPen, UserRound, Heart, Languages, DatabaseBackup, Mic, MessageSquare, Bell, CheckCircle2, XCircle } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { readLocalBackup, deleteLocalBackup } from "@/lib/backup";
+import { readLocalBackup, deleteLocalBackup, requestStoragePermission } from "@/lib/backup";
 import { toast } from "sonner";
 import type { AppState } from "@/lib/types";
+import { registerPlugin, Capacitor } from "@capacitor/core";
+import { Filesystem } from "@capacitor/filesystem";
+import { LocalNotifications } from "@capacitor/local-notifications";
+
+const KhetbookNative = registerPlugin<any>("KhetbookNative");
 
 type Lang = "hi" | "en";
 
@@ -31,38 +36,51 @@ const SLIDES: Slide[] = [
     blobA: "bg-[#c2410c]/40",
     blobB: "bg-[#7c2d12]/30",
     iconRing: "from-[#f97316] to-[#b91c1c]",
-    headingHi: "कागज़ की डायरी और बड़ा नुकसान",
-    headingEn: "The Danger of Paper Records",
+    headingHi: "हर काम का हिसाब ज़रूरी है",
+    headingEn: "Every Job Deserves a Clear Record",
     bodyHi:
-      "एक रिसर्च के अनुसार, कागज़ फटने या खोने से 80% से अधिक ऑपरेटरों का हिसाब मिट जाता है, जिससे हर साल हज़ारों का नुकसान होता है।\nकॉपियों में पुराना हिसाब ढूंढना और जोड़ना बेहद सिरदर्द का काम है।",
+      "एक ट्रैक्टर ऑपरेटर सिर्फ़ ट्रैक्टर नहीं चलाता।\n\nकिस किसान के यहाँ कितना काम हुआ, कितने बीघा जुताई हुई, कितना डीज़ल लगा, कितने पैसे मिले और कितना उधार बाकी है—हर काम के साथ एक नया हिसाब जुड़ता जाता है।\n\nसालों से यह पूरा हिसाब एक छोटी-सी डायरी संभालती आई है।\n\nलेकिन आपकी मेहनत का हिसाब इतना ज़रूरी है कि उसे ढूँढने, जोड़ने या खो जाने की चिंता नहीं होनी चाहिए।\n\nइसीलिए है Khetbook।",
     bodyEn:
-      "Research shows over 80% of tractor operators lose track of calculations due to torn or misplaced paper diaries, causing heavy financial losses.\nFlipping through paper pages to total old balances is a tedious daily headache.",
+      "A tractor operator does much more than drive a tractor.\n\nEvery job brings a new calculation—whose field was worked, how much land was covered, how much diesel was used, how much was paid, and how much is still due.\n\nFor years, a small paper diary has carried all of this responsibility.\n\nBut the record of your hard work should not come with the worry of searching, calculating, or losing it.\n\nThat is why Khetbook exists.",
   },
   {
     Icon: Tractor,
-    bg: "bg-gradient-to-br from-[#052e1a] via-[#0d5f37] to-[#1f8a4c]",
+    bg: "bg-gradient-to-br from-[#052e1a] via-[#0d5f37] to-[#125735]",
     blobA: "bg-[#f59e0b]/35",
     blobB: "bg-[#10b981]/30",
     iconRing: "from-[#fbbf24] to-[#f97316]",
-    headingHi: "Khetbook: सच्चा और सुरक्षित साथी",
-    headingEn: "Khetbook: Secure & Offline",
+    headingHi: "वही हिसाब, अब थोड़ा आसान",
+    headingEn: "The Same Work, Made Simpler",
     bodyHi:
-      "यह ऐप 100% ऑफलाइन है—आपका डेटा सिर्फ आपके फोन में रहेगा, इंटरनेट पर नहीं। इसलिए धोखाधड़ी का कोई खतरा नहीं है।\nबिना इंटरनेट के गहरे खेतों में भी जुताई, हेर्रो और थ्रेशर का सारा हिसाब-किताब सेकंडों में जोड़ेगा।",
+      "काम की एंट्री करें, किसान का खाता देखें, डीज़ल का खर्च जोड़ें और जानें कि कितना भुगतान बाकी है।\n\nहिंदी या हिंग्लिश में बोलकर एंट्री करें, साफ़ बिल बनाकर WhatsApp पर भेजें और UPI से भुगतान लेना आसान बनाएँ।\n\nइंटरनेट न हो, तब भी Khetbook काम करता है।\n\nन मुश्किल अकाउंटिंग।\nन कागज़ों का झंझट।\n\nबस आपका हिसाब—एक जगह, आपके फोन में।",
     bodyEn:
-      "This app is 100% offline—your data stays strictly on your phone, never on any cloud. Zero risk of online fraud.\nWorks deep inside fields without internet to compute Jutai, Herro, and Thresher calculations instantly.",
+      "Record jobs, check farmer accounts, track diesel expenses, and see pending payments—all in one place.\n\nUse Hindi or Hinglish voice entry, create clear bills, share them through WhatsApp, and make payments easier with UPI.\n\nKhetbook works even when there is no internet.\n\nNo complicated accounting.\nNo paper-record headaches.\n\nJust your ledger, in one place, on your phone.",
+  },
+  {
+    Icon: Heart,
+    bg: "bg-gradient-to-br from-[#070b14] via-[#0e1626] to-[#172740]",
+    blobA: "bg-[#3b82f6]/30",
+    blobB: "bg-[#6366f1]/30",
+    iconRing: "from-[#3b82f6] to-[#6366f1]",
+    headingHi: "यह ऐप मेरे घर से शुरू हुआ",
+    headingEn: "This App Started at Home",
+    bodyHi:
+      "नमस्ते, मैं Krish Tiwari हूँ।\n\nमैंने अपने पिताजी को ट्रैक्टर चलाते और किसानों के खेतों में जुताई व दूसरे कृषि कार्य करते देखा है।\n\nदिनभर के काम के साथ एक और जिम्मेदारी चलती रहती है—किसके यहाँ कितना काम हुआ, कितना भुगतान मिला और कितना बाकी है।\n\nइन सबका हिसाब डायरी में संभालते देखकर मेरे मन में एक सवाल आया—\n\nइतनी मेहनत और जिम्मेदारी संभालने वाले ट्रैक्टर ऑपरेटरों के लिए उनका अपना एक आसान हिसाब-किताब ऐप क्यों नहीं है?\n\nउसी सवाल से Khetbook की शुरुआत हुई।",
+    bodyEn:
+      "Hello, I am Krish Tiwari.\n\nI grew up watching my father operate his tractor and provide agricultural services to farmers.\n\nAlongside the physical work came another responsibility—remembering every job, every payment received, and every amount still due.\n\nWatching him manage all of this through a paper diary made me ask a simple question:\n\nWhy isn't there a simple bookkeeping app built specifically for tractor operators carrying this much responsibility?\n\nThat question became Khetbook.",
   },
   {
     Icon: UserRound,
-    bg: "bg-gradient-to-br from-[#0a1f2c] via-[#0f3a4a] to-[#137a4e]",
-    blobA: "bg-[#22d3ee]/30",
-    blobB: "bg-[#34d399]/30",
-    iconRing: "from-[#67e8f9] to-[#34d399]",
-    headingHi: "अपने डेवलपर के बारे में जानें",
-    headingEn: "About Your Developer",
+    bg: "bg-gradient-to-br from-[#0c0f1d] via-[#1a1c32] to-[#251730]",
+    blobA: "bg-[#ec4899]/25",
+    blobB: "bg-[#8b5cf6]/25",
+    iconRing: "from-[#ec4899] to-[#8b5cf6]",
+    headingHi: "मेरे पिताजी से, हर ट्रैक्टर ऑपरेटर तक",
+    headingEn: "From My Father to Every Tractor Operator",
     bodyHi:
-      "नमस्ते, मैं Krish Tiwari हूँ। यह ऐप मैंने विशेष रूप से अपने ट्रैक्टर चालक भाइयों के हक और सम्मान की रक्षा के लिए बनाई है।\nयह ऐप हमेशा पूरी तरह से मुफ़्त, विज्ञापन-मुक्त और सुरक्षित रहेगी। यह मेरा आपसे वादा है।",
+      "Khetbook की शुरुआत मेरे पिताजी की ज़रूरत से हुई, लेकिन यह उन सभी ट्रैक्टर ऑपरेटरों के लिए है जिनकी मेहनत का हर रुपया मायने रखता है।\n\nइसे सरल और उपयोगी रखना मेरी जिम्मेदारी है।\n\nKhetbook हमेशा मुफ़्त और विज्ञापन-मुक्त रहेगा। आपका हिसाब आपके डिवाइस पर आपका ही रहेगा।\n\nऔर क्योंकि Khetbook Open Source है, इसका काम और इसकी नीयत—दोनों दुनिया के सामने खुले हैं।\n\nमेहनत आपकी। हिसाब आपका।\nKhetbook बस उसे संभालने में आपका साथी है।\n\n— Krish Tiwari\nनिर्माता, Khetbook",
     bodyEn:
-      "Hello, I am Krish Tiwari. I created this app specifically to protect the hard work and dignity of our tractor operators.\nKhetbook is and will always remain 100% free, private, and ad-free. That is my promise to you.",
+      "Khetbook began with my father's needs, but it is built for every tractor operator whose hard-earned money deserves a clear record.\n\nKeeping it simple and useful is my responsibility.\n\nKhetbook will remain free and ad-free. Your records stay yours, on your device.\n\nAnd because Khetbook is open source, both its code and its intentions are open for the world to see.\n\nYour hard work. Your records.\nKhetbook is simply here to help you manage them.\n\n— Krish Tiwari\nCreator of Khetbook",
   },
 ];
 
@@ -84,9 +102,12 @@ export function OnboardingStory() {
     async function checkBackup() {
       if (ready && !state.settings.onboardedAt) {
         try {
-          const backup = await readLocalBackup();
-          if (backup) {
-            setDetectedBackup(backup);
+          const hasPerm = await requestStoragePermission();
+          if (hasPerm) {
+            const backup = await readLocalBackup();
+            if (backup) {
+              setDetectedBackup(backup);
+            }
           }
         } catch (err) {
           console.error("Error checking local backup file:", err);
@@ -104,9 +125,117 @@ export function OnboardingStory() {
     }
   }, [ready, state.settings.onboardedAt, checkingBackup]);
 
-  const total = SLIDES.length + 1; // + form
-  const isForm = step >= SLIDES.length;
-  const slide = !isForm ? SLIDES[step] : null;
+  const [micState, setMicState] = useState<"pending" | "granted" | "denied">("pending");
+  const [storageState, setStorageState] = useState<"pending" | "granted" | "denied">("pending");
+  const [smsState, setSmsState] = useState<"pending" | "granted" | "denied">("pending");
+  const [notifState, setNotifState] = useState<"pending" | "granted" | "denied">("pending");
+
+  async function checkInitialPermissions() {
+    if (!Capacitor.isNativePlatform()) {
+      setMicState("granted");
+      setStorageState("granted");
+      setSmsState("granted");
+      setNotifState("granted");
+      return;
+    }
+    try {
+      const fsStatus = await Filesystem.checkPermissions();
+      setStorageState(fsStatus.publicStorage === "granted" ? "granted" : "pending");
+    } catch (e) {}
+
+    try {
+      const notifStatus = await LocalNotifications.checkPermissions();
+      setNotifState(notifStatus.display === "granted" ? "granted" : "pending");
+    } catch (e) {}
+
+    try {
+      const smsStatus = await KhetbookNative.checkPermissions();
+      setSmsState(smsStatus.sms === "granted" ? "granted" : "pending");
+    } catch (e) {}
+  }
+
+  // Check permission status when entering permissions page
+  useEffect(() => {
+    if (step === SLIDES.length) {
+      checkInitialPermissions();
+    }
+  }, [step]);
+
+  async function requestMic() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      setMicState("granted");
+      toast.success(lang === "hi" ? "माइक की अनुमति मिल गई ✓" : "Microphone permission granted ✓");
+    } catch (err) {
+      setMicState("denied");
+      toast.error(lang === "hi" ? "माइक की अनुमति नहीं मिली" : "Microphone permission denied");
+    }
+  }
+
+  async function requestStorage() {
+    const granted = await requestStoragePermission();
+    if (granted) {
+      setStorageState("granted");
+      toast.success(lang === "hi" ? "स्टोरेज की अनुमति मिल गई ✓" : "Storage permission granted ✓");
+    } else {
+      setStorageState("denied");
+      toast.error(lang === "hi" ? "स्टोरेज की अनुमति नहीं मिली" : "Storage permission denied");
+    }
+  }
+
+  async function requestSMS() {
+    try {
+      const status = await KhetbookNative.requestPermissions({ permissions: ["sms"] });
+      if (status.sms === "granted") {
+        setSmsState("granted");
+        toast.success(lang === "hi" ? "एसएमएस की अनुमति मिल गई ✓" : "SMS permission granted ✓");
+      } else {
+        setSmsState("denied");
+        toast.error(lang === "hi" ? "एसएमएस की अनुमति नहीं मिली" : "SMS permission denied");
+      }
+    } catch (err) {
+      setSmsState("denied");
+    }
+  }
+
+  async function requestNotif() {
+    try {
+      const status = await LocalNotifications.requestPermissions();
+      if (status.display === "granted") {
+        setNotifState("granted");
+        toast.success(lang === "hi" ? "नोटिफिकेशन की अनुमति मिल गई ✓" : "Notification permission granted ✓");
+      } else {
+        setNotifState("denied");
+        toast.error(lang === "hi" ? "नोटिफिकेशन की अनुमति नहीं मिली" : "Notification permission denied");
+      }
+    } catch (err) {
+      setNotifState("denied");
+    }
+  }
+
+  async function requestAllRemaining() {
+    if (micState === "pending") {
+      await requestMic();
+    }
+    if (storageState === "pending") {
+      await requestStorage();
+    }
+    if (smsState === "pending") {
+      await requestSMS();
+    }
+    if (notifState === "pending") {
+      await requestNotif();
+    }
+  }
+
+  const allProcessed = micState !== "pending" && storageState !== "pending" && smsState !== "pending" && notifState !== "pending";
+
+  const total = SLIDES.length + 2; // + permissions + form
+  const isPermissions = step === SLIDES.length;
+  const isForm = step === SLIDES.length + 1;
+  const isSlide = step < SLIDES.length;
+  const slide = isSlide ? SLIDES[step] : null;
 
   // Re-key animation children on slide change
   const slideKey = useMemo(() => `s-${step}`, [step]);
@@ -305,7 +434,7 @@ export function OnboardingStory() {
           </button>
         </div>
 
-        {!isForm && slide ? (
+        {isSlide && slide ? (
           <div key={slideKey} className={`relative flex flex-1 flex-col text-white ${slide.bg}`}>
             {/* Ambient blobs */}
             <div
@@ -363,7 +492,7 @@ export function OnboardingStory() {
               ) : (
                 <button
                   onClick={() => {
-                    // skip to form
+                    // skip to permissions page
                     setStep(SLIDES.length);
                   }}
                   className={`${lang === "hi" ? "font-hindi" : ""} text-sm font-semibold text-white/70 hover:text-white`}
@@ -383,6 +512,190 @@ export function OnboardingStory() {
                   <ArrowRight className="h-5 w-5" />
                 </span>
               </button>
+            </div>
+          </div>
+        ) : isPermissions ? (
+          <div key="permissions" className="relative flex flex-1 flex-col bg-gradient-to-br from-[#090b11] via-[#121622] to-[#1c2235] text-white px-6 pb-6 pt-20 overflow-y-auto">
+            {/* Ambient blobs */}
+            <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl animate-pulse" />
+            <div className="pointer-events-none absolute -right-20 bottom-20 h-80 w-80 rounded-full bg-indigo-500/10 blur-3xl animate-pulse" />
+            
+            <div className="relative z-10 flex-1 flex flex-col justify-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold text-primary self-center">
+                <Tractor className="h-3.5 w-3.5" />
+                Khetbook
+              </div>
+              <h2
+                className={`${lang === "hi" ? "font-hindi" : ""} text-[26px] font-black leading-tight tracking-tight text-center`}
+              >
+                {t("ऐप की अनुमतियाँ (Permissions)", "App Permissions")}
+              </h2>
+              <p
+                className={`${lang === "hi" ? "font-hindi" : ""} mt-2 text-xs text-white/60 text-center max-w-xs self-center leading-relaxed`}
+              >
+                {t("बेहतर अनुभव के लिए कृपया इन अनुमतियों को सेट करें। आप इन्हें बाद में भी बदल सकते हैं।", "Configure these permissions for the best experience. You can adjust them later.")}
+              </p>
+
+              {/* List of Permissions */}
+              <div className="mt-8 space-y-3.5">
+                
+                {/* 1. Microphone Card */}
+                <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-sm">
+                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-orange-500/20 text-orange-400">
+                    <Mic className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`text-[15px] font-bold ${lang === "hi" ? "font-hindi" : ""}`}>
+                      {t("आवाज़ से हिसाब (Voice)", "Voice Bookkeeping")}
+                    </h3>
+                    <p className={`text-xs text-white/60 leading-normal mt-0.5 ${lang === "hi" ? "font-hindi" : ""}`}>
+                      {t("बोलकर जुताई, डीजल और नाम एंट्री करने के लिए।", "Use voice recognition to enter jobs and diesel details.")}
+                    </p>
+                  </div>
+                  <div>
+                    {micState === "granted" ? (
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded-full">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        {t("सक्रिय", "Active")}
+                      </span>
+                    ) : micState === "denied" ? (
+                      <button onClick={requestMic} className="flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full">
+                        <XCircle className="h-3.5 w-3.5" />
+                        {t("अस्वीकृत", "Denied")}
+                      </button>
+                    ) : (
+                      <button onClick={requestMic} className="text-xs font-bold text-[#090b11] bg-white hover:bg-white/90 px-3.5 py-1.5 rounded-full transition-transform active:scale-95 shadow">
+                        {t("अनुमति दें", "Grant")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Storage Card */}
+                <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-sm">
+                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-green-500/20 text-green-400">
+                    <DatabaseBackup className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`text-[15px] font-bold ${lang === "hi" ? "font-hindi" : ""}`}>
+                      {t("डेटा बैकअप (Safe Backup)", "Data Recovery")}
+                    </h3>
+                    <p className={`text-xs text-white/60 leading-normal mt-0.5 ${lang === "hi" ? "font-hindi" : ""}`}>
+                      {t("हिसाब को सुरक्षित रखने और रीस्टोर करने के लिए।", "Keep your ledger backup secure in your Documents folder.")}
+                    </p>
+                  </div>
+                  <div>
+                    {storageState === "granted" ? (
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded-full">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        {t("सक्रिय", "Active")}
+                      </span>
+                    ) : storageState === "denied" ? (
+                      <button onClick={requestStorage} className="flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full">
+                        <XCircle className="h-3.5 w-3.5" />
+                        {t("अस्वीकृत", "Denied")}
+                      </button>
+                    ) : (
+                      <button onClick={requestStorage} className="text-xs font-bold text-[#090b11] bg-white hover:bg-white/90 px-3.5 py-1.5 rounded-full transition-transform active:scale-95 shadow">
+                        {t("अनुमति दें", "Grant")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. SMS Card */}
+                <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-sm">
+                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-blue-500/20 text-blue-400">
+                    <MessageSquare className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`text-[15px] font-bold ${lang === "hi" ? "font-hindi" : ""}`}>
+                      {t("एसएमएस रसीद (SMS Receipts)", "SMS Receipts")}
+                    </h3>
+                    <p className={`text-xs text-white/60 leading-normal mt-0.5 ${lang === "hi" ? "font-hindi" : ""}`}>
+                      {t("किसान को रसीद का एसएमएस भेजने के लिए (वैकल्पिक)।", "Send transaction updates to farmers automatically (optional).")}
+                    </p>
+                  </div>
+                  <div>
+                    {smsState === "granted" ? (
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded-full">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        {t("सक्रिय", "Active")}
+                      </span>
+                    ) : smsState === "denied" ? (
+                      <button onClick={requestSMS} className="flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full">
+                        <XCircle className="h-3.5 w-3.5" />
+                        {t("अस्वीकृत", "Denied")}
+                      </button>
+                    ) : (
+                      <button onClick={requestSMS} className="text-xs font-bold text-[#090b11] bg-white hover:bg-white/90 px-3.5 py-1.5 rounded-full transition-transform active:scale-95 shadow">
+                        {t("अनुमति दें", "Grant")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4. Notifications Card */}
+                <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-sm">
+                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-purple-500/20 text-purple-400">
+                    <Bell className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`text-[15px] font-bold ${lang === "hi" ? "font-hindi" : ""}`}>
+                      {t("दैनिक याद दिलाएं (Reminders)", "Daily Reminders")}
+                    </h3>
+                    <p className={`text-xs text-white/60 leading-normal mt-0.5 ${lang === "hi" ? "font-hindi" : ""}`}>
+                      {t("रोज़ शाम को हिसाब जोड़ने की याद दिलाने के लिए।", "Polite reminders to update your diary at the end of the day.")}
+                    </p>
+                  </div>
+                  <div>
+                    {notifState === "granted" ? (
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded-full">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        {t("सक्रिय", "Active")}
+                      </span>
+                    ) : notifState === "denied" ? (
+                      <button onClick={requestNotif} className="flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full">
+                        <XCircle className="h-3.5 w-3.5" />
+                        {t("अस्वीकृत", "Denied")}
+                      </button>
+                    ) : (
+                      <button onClick={requestNotif} className="text-xs font-bold text-[#090b11] bg-white hover:bg-white/90 px-3.5 py-1.5 rounded-full transition-transform active:scale-95 shadow">
+                        {t("अनुमति दें", "Grant")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Bottom CTA bar */}
+            <div className="mt-auto pt-6 space-y-3 z-10 flex flex-col">
+              <Button
+                onClick={async () => {
+                  if (allProcessed) {
+                    next();
+                  } else {
+                    await requestAllRemaining();
+                  }
+                }}
+                size="lg"
+                className="w-full h-14 text-lg font-black bg-white text-[#090b11] hover:bg-white/90 active:scale-98 transition-transform shadow-xl"
+              >
+                {allProcessed 
+                  ? t("अनुमतियाँ सहेजें और आगे बढ़ें", "Save & Continue") 
+                  : t("शेष अनुमतियाँ सेटअप करें", "Set Remaining Permissions")}
+                <ArrowRight className="ml-1 h-5 w-5" />
+              </Button>
+              {!allProcessed && (
+                <button
+                  onClick={next}
+                  className="w-full h-10 text-xs font-bold text-white/50 hover:text-white transition-colors"
+                >
+                  {t("अभी छोड़ें (बाद में सेटिंग्स में बदलें)", "Skip for now (configure later)")}
+                </button>
+              )}
             </div>
           </div>
         ) : (

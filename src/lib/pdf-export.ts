@@ -6,7 +6,7 @@ import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
 import QRCode from "qrcode";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -351,28 +351,13 @@ function renderDieselHtml(state: AppState, fuel: any[]): HTMLElement {
 }
 
 async function takeHtmlSnapshot(element: HTMLElement): Promise<HTMLCanvasElement> {
-  const disabledSheets: HTMLStyleElement[] = [];
-  const styleElements = document.querySelectorAll("style, link[rel='stylesheet']");
-  styleElements.forEach((el) => {
-    const sheet = el as any;
-    if (sheet && !sheet.disabled) {
-      sheet.disabled = true;
-      disabledSheets.push(sheet);
-    }
+  // Render directly using html2canvas-pro, which natively supports oklch() colors.
+  // This eliminates style-disabling layout flickering and preserves Noto Sans Devanagari font rendering.
+  return html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
   });
-
-  try {
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    });
-    return canvas;
-  } finally {
-    disabledSheets.forEach((sheet) => {
-      sheet.disabled = false;
-    });
-  }
 }
 
 export async function exportFullLedgerPdf(state: AppState) {

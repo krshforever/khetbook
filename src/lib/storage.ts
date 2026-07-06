@@ -65,6 +65,7 @@ export function loadState(): AppState {
       entries: parsed.entries ?? [],
       payments: parsed.payments ?? [],
       fuel: parsed.fuel ?? [],
+      smsLogs: Array.isArray(parsed.smsLogs) ? parsed.smsLogs : [],
     };
   } catch {
     return INITIAL_STATE;

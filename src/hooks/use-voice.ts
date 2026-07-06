@@ -35,10 +35,13 @@ export function useVoice(lang: "hi-IN" | "en-IN") {
   const [transcript, setTranscript] = useState("");
   const [supported, setSupported] = useState(true);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const isMounted = useRef(true);
 
   useEffect(() => {
+    isMounted.current = true;
     setSupported(getCtor() !== null);
     return () => {
+      isMounted.current = false;
       if (recRef.current) {
         recRef.current.onresult = null;
         recRef.current.onend = null;
@@ -59,6 +62,14 @@ export function useVoice(lang: "hi-IN" | "en-IN") {
       return;
     }
 
+    if (recRef.current) {
+      try {
+        recRef.current.abort();
+      } catch (e) {
+        /* noop */
+      }
+    }
+
     try {
       // Explicitly trigger the WebView permission dialog for the microphone
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -66,16 +77,21 @@ export function useVoice(lang: "hi-IN" | "en-IN") {
       stream.getTracks().forEach((track) => track.stop());
     } catch (err) {
       console.error("Microphone permission error:", err);
-      toast.error("माइक्रोफ़ोन अनुमति आवश्यक है! (Microphone permission is required)");
-      setListening(false);
+      if (isMounted.current) {
+        toast.error("माइक्रोफ़ोन अनुमति आवश्यक है! (Microphone permission is required)");
+        setListening(false);
+      }
       return;
     }
+
+    if (!isMounted.current) return;
 
     const rec = new Ctor();
     rec.lang = lang;
     rec.continuous = true;
     rec.interimResults = true;
     rec.onresult = (e) => {
+      if (!isMounted.current) return;
       let finalTranscript = "";
       let interimTranscript = "";
       for (let i = 0; i < e.results.length; i++) {
@@ -88,10 +104,12 @@ export function useVoice(lang: "hi-IN" | "en-IN") {
       }
       setTranscript((finalTranscript + interimTranscript).trim());
     };
-    rec.onend = () => setListening(false);
+    rec.onend = () => {
+      if (isMounted.current) setListening(false);
+    };
     rec.onerror = (e) => {
       console.error("Speech recognition error:", e.error);
-      setListening(false);
+      if (isMounted.current) setListening(false);
     };
     recRef.current = rec;
     setTranscript("");
@@ -104,7 +122,13 @@ export function useVoice(lang: "hi-IN" | "en-IN") {
   }, [lang]);
 
   const stop = useCallback(() => {
-    recRef.current?.stop();
+    if (recRef.current) {
+      try {
+        recRef.current.stop();
+      } catch (e) {
+        /* noop */
+      }
+    }
     setListening(false);
   }, []);
 

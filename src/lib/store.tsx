@@ -140,10 +140,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
       deleteFuel: (id) => setStateInner((s) => ({ ...s, fuel: s.fuel.filter((f) => f.id !== id) })),
       addSMSLog: (log) =>
-        setStateInner((s) => ({
-          ...s,
-          smsLogs: [...(s.smsLogs || []), { ...log, id: uid() }],
-        })),
+        setStateInner((s) => {
+          const logs = [...(s.smsLogs || []), { ...log, id: uid() }];
+          return {
+            ...s,
+            smsLogs: logs.slice(-100),
+          };
+        }),
       clearSMSLogs: () =>
         setStateInner((s) => ({
           ...s,
