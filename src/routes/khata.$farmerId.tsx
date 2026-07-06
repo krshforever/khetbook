@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Capacitor } from "@capacitor/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import {
@@ -70,8 +71,8 @@ function FarmerDetail() {
 
   const upiLink = useMemo(
     () =>
-      buildUpiLink(state.settings.upiVpa, state.settings.merchantName, pending, farmer?.name ?? ""),
-    [state.settings, pending, farmer?.name],
+      buildUpiLink(state.settings.upiVpa, state.settings.merchantName || state.settings.userName || "Khetbook"),
+    [state.settings],
   );
   const canQR = !!state.settings.upiVpa && pending > 0;
 
@@ -116,8 +117,8 @@ function FarmerDetail() {
       : [];
     const all = [...entryRows, ...paymentRows];
     all.sort((a, b) => {
-      const d = +new Date(b.date) - +new Date(a.date);
-      return order === "new" ? d : -d;
+      const comp = b.date.localeCompare(a.date);
+      return order === "new" ? comp : -comp;
     });
     return all;
   }, [state, farmer, landFilter, order]);
@@ -159,40 +160,38 @@ function FarmerDetail() {
     const fromT = +new Date(from);
     const ents = state.entries
       .filter((e) => e.farmerId === farmer!.id && +new Date(e.date) >= fromT)
-      .sort((a, b) => +new Date(a.date) - +new Date(b.date));
+      .sort((a, b) => a.date.localeCompare(b.date));
     const pays = state.payments
       .filter((p) => p.farmerId === farmer!.id && +new Date(p.date) >= fromT)
-      .sort((a, b) => +new Date(a.date) - +new Date(b.date));
+      .sort((a, b) => a.date.localeCompare(b.date));
 
+    const alias = state.settings.userAlias || state.settings.merchantName || state.settings.userName || "ट्रैक्टर ऑपरेटर";
     const lines: string[] = [
+      `*${alias} (Khetbook बहीखाता)*`,
       `नमस्ते ${farmer!.name} जी 🙏`,
       ``,
-      `Khetbook हिसाब का बाकी: *${fmtINR(pending)}*`,
+      `आपके ट्रैक्टर काम का बकाया हिसाब-किताब इस प्रकार है:`,
+      `कुल बाकी राशि: *${fmtINR(pending)}*`,
     ];
 
     if (withTable && (ents.length || pays.length)) {
-      lines.push("", `📋 ${months === 0 ? "पूरा" : `पिछले ${months} महीने का`} हिसाब:`);
-      lines.push("```");
-      lines.push("तारीख      काम           रक़म    उधार");
+      lines.push("", `📋 *हिसाब का विवरण (${months === 0 ? "पूरा" : `पिछले ${months} महीने का`}):*`);
       for (const e of ents) {
-        const t = getTool(state, e.toolId)?.nameHi ?? "?";
-        const d = fmtDate(e.date).padEnd(11);
-        const tool = `${t} ${e.qty}${e.unit}`.padEnd(13);
-        const total = String(`₹${e.total}`).padEnd(7);
-        const ud = e.udharAdded ? `+₹${e.udharAdded}` : "—";
-        lines.push(`${d} ${tool} ${total} ${ud}`);
+        const t = getTool(state, e.toolId)?.nameHi ?? "काम";
+        const d = fmtDate(e.date);
+        const details = `• *${d}* - ${t} (${e.qty} ${e.unit} × ₹${e.rate}): किराया ₹${e.total} | मिला ₹${e.cashReceived} | बाकी ₹${e.udharAdded}`;
+        lines.push(details);
       }
       for (const p of pays) {
-        lines.push(`${fmtDate(p.date).padEnd(11)} भुगतान मिला   −₹${p.amount}`);
+        lines.push(`• *${fmtDate(p.date)}* - भुगतान मिला: −₹${p.amount}`);
       }
-      lines.push("```");
     }
 
-    lines.push("", "कृपया जल्द भुगतान कर दीजिये।");
+    lines.push("", "यदि हिसाब में कोई अंतर लगे, तो कृपया मुझे अवश्य बताएं।");
     if (state.settings.upiVpa) {
-      lines.push("", "UPI से सीधे भेजें:", upiLink);
+      lines.push("", "सीधे UPI से भुगतान करने के लिए नीचे दिए लिंक पर क्लिक करें:", upiLink);
     }
-    lines.push("", `— ${state.settings.merchantName || state.settings.userName || "Khetbook"}`);
+    lines.push("", `धन्यवाद!\n— ${state.settings.merchantName || state.settings.userName || "Khetbook"}`);
     return lines.join("\n");
   }
 
@@ -211,35 +210,19 @@ function FarmerDetail() {
 
   async function sendBillPdf() {
     const { from, to, label } = periodRange(period);
-    const file = exportFarmerBillPdf(state, farmer!.id, from, to, label);
-    if (!file) return toast.error("बिल नहीं बना");
-    const nav = navigator as Navigator & {
-      canShare?: (d: ShareData) => boolean;
-      share?: (d: ShareData) => Promise<void>;
-    };
-    if (nav.share && nav.canShare?.({ files: [file] })) {
-      try {
-        await nav.share({
-          files: [file],
-          title: `Bill — ${farmer!.name}`,
-          text: buildWhatsAppMessage(period, false),
-        });
-        setSendOpen(false);
-        return;
-      } catch {
-        /* fall through to download */
+    toast.info("PDF तैयार हो रहा है...");
+    try {
+      const shareText = buildWhatsAppMessage(period, false);
+      await exportFarmerBillPdf(state, farmer!.id, from, to, label, shareText);
+      setSendOpen(false);
+      if (Capacitor.isNativePlatform()) {
+        toast.success("PDF शेयर किया जा रहा है...");
+      } else {
+        toast.success("PDF डाउनलोड हो गया है! कृपया इसे व्हाट्सएप पर अटैच करें।");
       }
+    } catch (err: any) {
+      toast.error(err.message || "PDF नहीं बन पाया");
     }
-    // Fallback — download and open WhatsApp text-only
-    const url = URL.createObjectURL(file);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.name;
-    a.click();
-    URL.revokeObjectURL(url);
-    openWhatsApp(buildWhatsAppMessage(period, false));
-    setSendOpen(false);
-    toast.success("PDF डाउनलोड हुआ — WhatsApp में अटैच करें");
   }
 
   async function shareQR() {
@@ -249,25 +232,60 @@ function FarmerDetail() {
         canvasRef.current!.toBlob((b) => resolve(b), "image/png"),
       );
       if (!blob) throw new Error("blob");
-      const file = new File([blob], `tractor-qr-${farmer!.name}.png`, { type: "image/png" });
-      const nav = navigator as Navigator & {
-        canShare?: (d: ShareData) => boolean;
-        share?: (d: ShareData) => Promise<void>;
-      };
-      if (nav.share && nav.canShare?.({ files: [file] })) {
-        await nav.share({
-          files: [file],
-          title: "Tractor Hisaab — UPI QR",
-          text: `${farmer!.name} जी का बाकी ${fmtINR(pending)} — स्कैन करके भेजें।`,
-        });
+      
+      const filename = `khetbook-qr-${farmer!.name.replace(/\s+/g, "_")}.png`;
+      const text = `${farmer!.name} जी का बाकी ${fmtINR(pending)} — स्कैन करके भेजें।`;
+
+      if (Capacitor.isNativePlatform()) {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          try {
+            const base64 = (reader.result as string).split(',')[1];
+            const { Filesystem, Directory } = await import("@capacitor/filesystem");
+            const { Share } = await import("@capacitor/share");
+
+            const fileResult = await Filesystem.writeFile({
+              path: filename,
+              data: base64,
+              directory: Directory.Cache,
+            });
+
+            await Share.share({
+              title: "Khetbook — UPI QR",
+              text: text,
+              url: fileResult.uri,
+            });
+          } catch (err: any) {
+            toast.error("QR शेयर नहीं हो पाया: " + err.message);
+          }
+        };
+        reader.readAsDataURL(blob);
       } else {
+        try {
+          const file = new File([blob], filename, { type: "image/png" });
+          const nav = navigator as Navigator & {
+            canShare?: (d: ShareData) => boolean;
+            share?: (d: ShareData) => Promise<void>;
+          };
+          if (nav.share && nav.canShare?.({ files: [file] })) {
+            await nav.share({
+              files: [file],
+              title: "Khetbook — UPI QR",
+              text: text,
+            });
+            return;
+          }
+        } catch (err) {
+          console.warn("Web QR Share failed:", err);
+        }
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `tractor-qr-${farmer!.name}.png`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
-        toast.success("QR डाउनलोड हुआ — WhatsApp में भेजें");
+        toast.success("QR डाउनलोड हुआ — WhatsApp पर भेज रहे हैं");
+        openWhatsApp(text);
       }
     } catch {
       toast.error("शेयर नहीं हो पाया");
@@ -492,7 +510,7 @@ function FarmerDetail() {
               variant="outline"
               className="font-hindi h-14 text-base font-black"
             >
-              <FileText className="h-5 w-5" /> PDF बिल भेजें
+              <FileText className="h-5 w-5" /> {Capacitor.isNativePlatform() ? "PDF बिल भेजें" : "PDF बिल डाउनलोड करें"}
             </Button>
           </div>
         </DialogContent>

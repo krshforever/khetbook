@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
+import { uid } from "@/lib/storage";
 import type { Farmer } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -28,14 +29,17 @@ export function FarmerEditDialog({ open, onOpenChange, farmer }: Props) {
     if (farmer) {
       setName(farmer.name);
       setPhone(farmer.phone ?? "");
+    } else {
+      setName("");
+      setPhone("");
     }
   }, [farmer, open]);
 
   function save() {
-    if (!farmer) return;
     if (!name.trim()) return toast.error("नाम लिखें");
-    upsertFarmer({ ...farmer, name: name.trim(), phone: phone.trim() || undefined });
-    toast.success("किसान अपडेट हो गया ✓");
+    const targetFarmer = farmer || { id: uid(), name: name.trim() };
+    upsertFarmer({ ...targetFarmer, name: name.trim(), phone: phone.trim() || undefined });
+    toast.success(farmer ? "किसान अपडेट हो गया ✓" : "नया किसान जुड़ गया ✓");
     onOpenChange(false);
   }
 
@@ -43,7 +47,9 @@ export function FarmerEditDialog({ open, onOpenChange, farmer }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="font-hindi text-xl font-black">किसान एडिट करें</DialogTitle>
+          <DialogTitle className="font-hindi text-xl font-black">
+            {farmer ? "किसान एडिट करें" : "नया किसान जोड़ें"}
+          </DialogTitle>
         </DialogHeader>
         <div className="grid gap-3">
           <div>

@@ -72,6 +72,16 @@ export interface Settings {
   autoSmsOnSave?: boolean; // toggle to send native background SMS to farmers
 }
 
+export interface SMSLog {
+  id: string;
+  date: string;
+  farmerName: string;
+  phone: string;
+  message: string;
+  status: "success" | "failed";
+  error?: string;
+}
+
 export interface AppState {
   version: 2;
   settings: Settings;
@@ -80,4 +90,5 @@ export interface AppState {
   entries: Entry[];
   payments: Payment[];
   fuel: FuelExpense[];
+  smsLogs?: SMSLog[];
 }

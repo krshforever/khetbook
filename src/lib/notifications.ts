@@ -57,6 +57,8 @@ export async function cancelDailyReminder() {
   }
 }
 
+let webReminderTimeout: any = null;
+
 /** Web fallback: shows a Notification when app is opened after the hour, once per day. */
 async function scheduleWebReminder(hour: number) {
   if (typeof window === "undefined" || !("Notification" in window)) return false;
@@ -68,7 +70,10 @@ async function scheduleWebReminder(hour: number) {
   const now = new Date();
   if (now.getHours() >= hour) maybeShowToday();
   // Re-check at the top of the hour
-  setTimeout(
+  if (webReminderTimeout) {
+    clearTimeout(webReminderTimeout);
+  }
+  webReminderTimeout = setTimeout(
     maybeShowToday,
     Math.max(0, (hour - now.getHours()) * 3600_000 - now.getMinutes() * 60_000),
   );

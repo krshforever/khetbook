@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { AppState, Entry, Farmer, FuelExpense, Payment, Settings, Tool } from "./types";
+import type { AppState, Entry, Farmer, FuelExpense, Payment, Settings, Tool, SMSLog } from "./types";
 import { INITIAL_STATE, loadState, saveState, uid } from "./storage";
 import { writeLocalBackup } from "./backup";
 
@@ -33,6 +33,9 @@ interface Ctx {
   // fuel
   addFuel: (f: Omit<FuelExpense, "id">) => FuelExpense;
   deleteFuel: (id: string) => void;
+  // sms logs
+  addSMSLog: (log: Omit<SMSLog, "id">) => void;
+  clearSMSLogs: () => void;
   // bulk
   replaceAll: (s: AppState) => void;
   ready: boolean;
@@ -136,7 +139,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return full;
       },
       deleteFuel: (id) => setStateInner((s) => ({ ...s, fuel: s.fuel.filter((f) => f.id !== id) })),
-      replaceAll: (s) => setStateInner(s),
+      addSMSLog: (log) =>
+        setStateInner((s) => ({
+          ...s,
+          smsLogs: [...(s.smsLogs || []), { ...log, id: uid() }],
+        })),
+      clearSMSLogs: () =>
+        setStateInner((s) => ({
+          ...s,
+          smsLogs: [],
+        })),
+      replaceAll: (s) =>
+        setStateInner((prev) => ({
+          ...prev,
+          ...s,
+          settings: { ...prev.settings, ...(s?.settings ?? {}) },
+          tools: Array.isArray(s?.tools) ? s.tools : prev.tools,
+          farmers: Array.isArray(s?.farmers) ? s.farmers : [],
+          entries: Array.isArray(s?.entries) ? s.entries : [],
+          payments: Array.isArray(s?.payments) ? s.payments : [],
+          fuel: Array.isArray(s?.fuel) ? s.fuel : [],
+          smsLogs: Array.isArray(s?.smsLogs) ? s.smsLogs : [],
+        })),
     }),
     [state, setState, ready],
   );

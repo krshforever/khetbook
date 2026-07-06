@@ -88,10 +88,8 @@ export function fmtMonthHeading(iso: string): string {
   return `${HI_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-export function buildUpiLink(vpa: string, name: string, amount: number, farmerName: string): string {
+export function buildUpiLink(vpa: string, name: string): string {
   const pa = encodeURIComponent(vpa || "your@upi");
   const pn = encodeURIComponent(name || "Khetbook");
-  const am = amount.toFixed(2);
-  const tn = encodeURIComponent(`Khetbook_${farmerName.replace(/\s+/g, "_")}`);
-  return `upi://pay?pa=${pa}&pn=${pn}&am=${am}&tn=${tn}&cu=INR`;
+  return `upi://pay?pa=${pa}&pn=${pn}&cu=INR`;
 }

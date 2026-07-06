@@ -19,6 +19,7 @@
     "@capacitor/core": "^8.4.1",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/local-notifications": "^8.2.0",
+    "@capacitor/share": "^8.0.1",
     "@fontsource/noto-sans-devanagari": "^5.2.8",
     "@fontsource/plus-jakarta-sans": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",

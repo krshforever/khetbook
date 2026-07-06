@@ -55,6 +55,10 @@ public class KhetbookNativePlugin extends Plugin {
         if (getPermissionState("sms") == com.getcapacitor.PermissionState.GRANTED) {
             String phone = call.getString("phone");
             String message = call.getString("message");
+            if (phone == null || phone.isEmpty() || message == null || message.isEmpty()) {
+                call.reject("Phone number or message is missing");
+                return;
+            }
             String cleanPhone = phone.replaceAll("\\D", "");
             if (cleanPhone.length() == 10) {
                 cleanPhone = "91" + cleanPhone;
@@ -67,10 +71,11 @@ public class KhetbookNativePlugin extends Plugin {
 
     private void sendSmsInternal(String phone, String message, PluginCall call) {
         try {
-            SmsManager smsManager;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            SmsManager smsManager = null;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 smsManager = getContext().getSystemService(SmsManager.class);
-            } else {
+            }
+            if (smsManager == null) {
                 smsManager = SmsManager.getDefault();
             }
 

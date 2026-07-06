@@ -16,7 +16,7 @@ import type { Farmer } from "@/lib/types";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/khata/")({
-  head: () => ({ meta: [{ title: "ग्राहक खाता — Khata" }] }),
+  head: () => ({ meta: [{ title: "किसान खाता — Khata" }] }),
   component: KhataList,
 });
 
@@ -25,17 +25,48 @@ function KhataList() {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [editFarmer, setEditFarmer] = useState<Farmer | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const farmerBalances = useMemo(() => {
+    const balances: Record<string, number> = {};
+    for (let i = 0; i < state.entries.length; i++) {
+      const e = state.entries[i];
+      balances[e.farmerId] = (balances[e.farmerId] || 0) + e.udharAdded;
+    }
+    for (let i = 0; i < state.payments.length; i++) {
+      const p = state.payments[i];
+      balances[p.farmerId] = (balances[p.farmerId] || 0) - p.amount;
+    }
+    return state.farmers.map((f) => ({
+      farmer: f,
+      pending: Math.max(0, Math.round(balances[f.id] || 0)),
+    }));
+  }, [state.farmers, state.entries, state.payments]);
 
   const rows = useMemo(() => {
-    return state.farmers
-      .map((f) => ({ farmer: f, pending: pendingForFarmer(state, f.id) }))
-      .filter((r) => r.farmer.name.toLowerCase().includes(q.toLowerCase()))
-      .sort((a, b) => b.pending - a.pending || a.farmer.name.localeCompare(b.farmer.name));
-  }, [state, q]);
+    const query = q.trim().toLowerCase();
+    const list = query
+      ? farmerBalances.filter((r) => r.farmer.name.toLowerCase().includes(query))
+      : [...farmerBalances];
+    return list.sort((a, b) => b.pending - a.pending || a.farmer.name.localeCompare(b.farmer.name));
+  }, [farmerBalances, q]);
 
   return (
-    <AppShell title="ग्राहक खाता" subtitle="Khata Ledger">
-      <MicSearchInput placeholder="किसान खोजें…" value={q} onChange={setQ} />
+    <AppShell title="किसान खाता" subtitle="Khata Ledger">
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <MicSearchInput placeholder="किसान खोजें…" value={q} onChange={setQ} />
+        </div>
+        <button
+          onClick={() => {
+            setEditFarmer(null);
+            setDialogOpen(true);
+          }}
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-success text-success-foreground shadow-sm active:scale-[0.98]"
+        >
+          <UserPlus className="h-6 w-6" />
+        </button>
+      </div>
       <ul className="mt-4 grid gap-2">
         {rows.map(({ farmer, pending }) => (
           <li key={farmer.id} className="flex items-stretch gap-2">
@@ -71,7 +102,7 @@ function KhataList() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem className="font-hindi" onClick={() => setEditFarmer(farmer)}>
+                <DropdownMenuItem className="font-hindi" onClick={() => { setEditFarmer(farmer); setDialogOpen(true); }}>
                   <Pencil className="mr-2 h-4 w-4" /> एडिट करें
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -101,8 +132,8 @@ function KhataList() {
       </ul>
 
       <FarmerEditDialog
-        open={!!editFarmer}
-        onOpenChange={(v) => !v && setEditFarmer(null)}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
         farmer={editFarmer}
       />
       {/* keep Link import used */}

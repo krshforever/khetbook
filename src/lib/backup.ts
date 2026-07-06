@@ -57,7 +57,33 @@ export async function readLocalBackup(): Promise<AppState | null> {
       return null;
     }
 
-    return parsed as AppState;
+    const validatedState: AppState = {
+      version: 2,
+      settings: {
+        upiVpa: parsed.settings.upiVpa || "",
+        merchantName: parsed.settings.merchantName || "",
+        voiceLang: parsed.settings.voiceLang || "hi-IN",
+        dieselState: parsed.settings.dieselState,
+        lastDieselPrice: parsed.settings.lastDieselPrice,
+        lastBackupAt: parsed.settings.lastBackupAt,
+        userName: parsed.settings.userName,
+        userAlias: parsed.settings.userAlias,
+        userPhone: parsed.settings.userPhone,
+        onboardedAt: parsed.settings.onboardedAt,
+        notificationsEnabled: parsed.settings.notificationsEnabled,
+        reminderHour: parsed.settings.reminderHour,
+        lastReminderShown: parsed.settings.lastReminderShown,
+        githubRepo: parsed.settings.githubRepo,
+        autoSmsOnSave: parsed.settings.autoSmsOnSave ?? false,
+      },
+      tools: Array.isArray(parsed.tools) ? parsed.tools : [],
+      farmers: parsed.farmers,
+      entries: parsed.entries,
+      payments: Array.isArray(parsed.payments) ? parsed.payments : [],
+      fuel: Array.isArray(parsed.fuel) ? parsed.fuel : [],
+    };
+
+    return validatedState;
   } catch (err) {
     console.log("No local backup file found or failed to read:", err);
     return null;

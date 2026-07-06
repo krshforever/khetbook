@@ -38,6 +38,18 @@ export function useVoice(lang: "hi-IN" | "en-IN") {
 
   useEffect(() => {
     setSupported(getCtor() !== null);
+    return () => {
+      if (recRef.current) {
+        recRef.current.onresult = null;
+        recRef.current.onend = null;
+        recRef.current.onerror = null;
+        try {
+          recRef.current.abort();
+        } catch (e) {
+          /* noop */
+        }
+      }
+    };
   }, []);
 
   const start = useCallback(async () => {

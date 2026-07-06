@@ -23,6 +23,7 @@ async function sendJobSMS(
   toolName: string,
   qty: number,
   unit: string,
+  rate: number,
   total: number,
   cash: number,
   udhar: number,
@@ -30,12 +31,7 @@ async function sendJobSMS(
   upiVpa: string,
   merchantName: string,
   userAlias: string
-) {
-  if (!Capacitor.isNativePlatform()) {
-    console.log("Not running in native app. SMS sending skipped.");
-    return;
-  }
-
+): Promise<{ status: "success" | "failed"; error?: string; message: string }> {
   // Format the date
   const dateStr = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
 
@@ -43,37 +39,41 @@ async function sendJobSMS(
   const updatedPending = totalPending + udhar;
 
   // Generate UPI deep link for the updated pending balance (if positive)
-  const payAmount = Math.max(0, updatedPending);
-  const upiLink = payAmount > 0 && upiVpa ? buildUpiLink(upiVpa, merchantName, payAmount, farmerName) : "";
+  const upiLink = upiVpa ? buildUpiLink(upiVpa, merchantName) : "";
+
+  // Prefix business detail in sender context header
+  const senderHeader = userAlias ? `${userAlias} (Khetbook)` : `${merchantName} (Khetbook)`;
 
   // Construct Hindi SMS notification
-  let smsText = `नमस्ते ${farmerName} जी!\nKhetbook हिसाब में नया काम जोड़ा गया है:\nतारीख: ${dateStr}\nकाम: ${toolName} (${qty} ${unit})\nकुल रक़म: ₹${total}\nनकद मिला: ₹${cash}\nबाकी उधार: ₹${udhar}\n\nकुल बाकी हिसाब (All-Time): ₹${updatedPending}`;
+  let smsText = `[${senderHeader}]\nनमस्ते ${farmerName} जी। आपके खाते में नया काम दर्ज हुआ है:\n`;
+  smsText += `• तारीख: ${dateStr}\n`;
+  smsText += `• काम: ${toolName} (${qty} ${unit} × ₹${rate})\n`;
+  smsText += `• किराया: ₹${total}\n`;
+  smsText += `• नकद मिला: ₹${cash}\n`;
+  smsText += `• बाकी उधार: ₹${udhar}\n`;
+  smsText += `• कुल बाकी (पिछला मिलाकर): ₹${updatedPending}`;
 
   if (upiLink) {
-    smsText += `\n\nसीधे UPI से भुगतान करने के लिए इस लिंक पर क्लिक करें:\n${upiLink}`;
+    smsText += `\n\nसीधे भुगतान हेतु UPI लिंक:\n${upiLink}`;
   }
 
-  if (userAlias) {
-    smsText += `\n\n- ${merchantName} (${userAlias})`;
-  } else {
-    smsText += `\n\n- ${merchantName}`;
+  smsText += `\n\nहिसाब में कोई अंतर लगे तो कृपया मुझे बताएं।`;
+
+  if (!Capacitor.isNativePlatform()) {
+    console.log("Not running in native app. SMS sending skipped.");
+    return { status: "success", message: smsText };
   }
 
   try {
     await KhetbookNative.sendSMS({ phone, message: smsText });
     toast.success("किसान को SMS भेज दिया गया ✓");
+    return { status: "success", message: smsText };
   } catch (err: any) {
     console.error("SMS Sending failed:", err);
     toast.error("SMS नहीं भेजा जा सका: " + err.message);
+    return { status: "failed", error: err.message || "SMS delivery failed", message: smsText };
   }
 }
-
-interface Props {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  editEntryId?: string;
-}
-
 /** Tiny mic button rendered inside text inputs. Independent SpeechRecognition. */
 function InlineMic({
   lang,
@@ -105,8 +105,14 @@ function InlineMic({
   );
 }
 
+interface Props {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  editEntryId?: string;
+}
+
 export function JobEntrySheet({ open, onOpenChange, editEntryId }: Props) {
-  const { state, addEntry, updateEntry, findOrCreateFarmer, upsertFarmer } = useStore();
+    const { state, addEntry, updateEntry, findOrCreateFarmer, upsertFarmer, addSMSLog } = useStore();
   const voice = useVoice(state.settings.voiceLang);
 
   const editing = useMemo<Entry | undefined>(
@@ -114,9 +120,10 @@ export function JobEntrySheet({ open, onOpenChange, editEntryId }: Props) {
     [editEntryId, state.entries],
   );
 
-  const [toolId, setToolId] = useState<string>("");
+    const [toolId, setToolId] = useState<string>("");
   const [farmerQuery, setFarmerQuery] = useState("");
   const [farmerId, setFarmerId] = useState<string>("");
+  const [farmerPhone, setFarmerPhone] = useState("");
   const [landowner, setLandowner] = useState("");
   const [qty, setQty] = useState<string>("");
   const [multiplier, setMultiplier] = useState<Multiplier>("single");
@@ -128,14 +135,25 @@ export function JobEntrySheet({ open, onOpenChange, editEntryId }: Props) {
   const tool = state.tools.find((t) => t.id === toolId);
   const farmer = state.farmers.find((f) => f.id === farmerId);
 
+    // Synchronize farmerPhone with picked farmer
+  useEffect(() => {
+    if (farmerId) {
+      const f = state.farmers.find((x) => x.id === farmerId);
+      setFarmerPhone(f?.phone ?? "");
+    } else {
+      setFarmerPhone("");
+    }
+  }, [farmerId, state.farmers]);
+
   // Prefill in edit mode / reset on open
   useEffect(() => {
     if (!open) return;
     if (editing) {
       const f = state.farmers.find((x) => x.id === editing.farmerId);
       setToolId(editing.toolId);
-      setFarmerId(editing.farmerId);
+            setFarmerId(editing.farmerId);
       setFarmerQuery(f?.name ?? "");
+      setFarmerPhone(f?.phone ?? "");
       setLandowner(editing.landowner ?? "");
       setQty(String(editing.qty));
       setMultiplier(editing.multiplier);
@@ -144,8 +162,9 @@ export function JobEntrySheet({ open, onOpenChange, editEntryId }: Props) {
       setDate(new Date(editing.date));
     } else {
       setToolId("");
-      setFarmerQuery("");
+            setFarmerQuery("");
       setFarmerId("");
+      setFarmerPhone("");
       setLandowner("");
       setQty("");
       setMultiplier("single");
@@ -247,10 +266,13 @@ export function JobEntrySheet({ open, onOpenChange, editEntryId }: Props) {
     setFarmerQuery(name);
   }
 
-  function createNewFarmer() {
+    function createNewFarmer() {
     const name = farmerQuery.trim();
     if (!name) return;
     const f = findOrCreateFarmer(name);
+    if (farmerPhone.trim()) {
+      upsertFarmer({ ...f, phone: farmerPhone.trim() });
+    }
     setFarmerId(f.id);
     setFarmerQuery(f.name);
     toast.success(`नया किसान जोड़ा: ${f.name}`);
@@ -263,10 +285,18 @@ export function JobEntrySheet({ open, onOpenChange, editEntryId }: Props) {
     if (!qty || parseFloat(qty) <= 0) return toast.error("माप दर्ज करें");
     if (!rate || parseFloat(rate) <= 0) return toast.error("रेट दर्ज करें");
 
-    let fId = farmerId;
+        let fId = farmerId;
     if (!fId) {
       const f = findOrCreateFarmer(name);
       fId = f.id;
+      if (farmerPhone.trim()) {
+        upsertFarmer({ ...f, phone: farmerPhone.trim() });
+      }
+    } else {
+      const f = state.farmers.find((x) => x.id === fId);
+      if (f && farmerPhone.trim() && f.phone !== farmerPhone.trim()) {
+        upsertFarmer({ ...f, phone: farmerPhone.trim() });
+      }
     }
     if (landowner.trim()) {
       const existing = state.farmers.find((f) => f.id === fId) ?? { id: fId, name };
@@ -305,13 +335,14 @@ export function JobEntrySheet({ open, onOpenChange, editEntryId }: Props) {
           const userAlias = state.settings.userAlias || "";
           const upiVpa = state.settings.upiVpa || "";
 
-          // Run asynchronously in background
+                    // Run asynchronously in background
           sendJobSMS(
             farmer.name,
             farmer.phone,
             toolName,
             payload.qty,
             payload.unit,
+            payload.rate,
             payload.total,
             payload.cashReceived,
             payload.udharAdded,
@@ -319,7 +350,16 @@ export function JobEntrySheet({ open, onOpenChange, editEntryId }: Props) {
             upiVpa,
             merchantName,
             userAlias
-          );
+          ).then((res) => {
+            addSMSLog({
+              date: new Date().toISOString(),
+              farmerName: farmer.name,
+              phone: farmer.phone ?? "",
+              message: res.message,
+              status: res.status,
+              error: res.error,
+            });
+          });
         }
       }
     }
@@ -395,24 +435,34 @@ export function JobEntrySheet({ open, onOpenChange, editEntryId }: Props) {
             </div>
           </Section>
 
-          {/* Farmer */}
-          <Section title="किसान का नाम">
-            <div className="relative">
+                    {/* Farmer */}
+          <Section title="किसान">
+            <div className="space-y-2">
+              <div className="relative">
+                <Input
+                  value={farmerQuery}
+                  onChange={(e) => {
+                    setFarmerQuery(e.target.value);
+                    setFarmerId("");
+                  }}
+                  placeholder="किसान का नाम लिखें या बोलें…"
+                  className={cn("h-14 pr-14 text-lg font-hindi", hl("farmer"))}
+                />
+                <InlineMic
+                  lang={state.settings.voiceLang}
+                  onTranscript={(t) => {
+                    setFarmerQuery(t);
+                    setFarmerId("");
+                  }}
+                />
+              </div>
               <Input
-                value={farmerQuery}
-                onChange={(e) => {
-                  setFarmerQuery(e.target.value);
-                  setFarmerId("");
-                }}
-                placeholder="नाम लिखें या बोलें…"
-                className={cn("h-14 pr-14 text-lg font-hindi", hl("farmer"))}
-              />
-              <InlineMic
-                lang={state.settings.voiceLang}
-                onTranscript={(t) => {
-                  setFarmerQuery(t);
-                  setFarmerId("");
-                }}
+                value={farmerPhone}
+                onChange={(e) => setFarmerPhone(e.target.value)}
+                placeholder="किसान का मोबाइल नंबर (Optional)"
+                className="h-12 text-base font-hindi"
+                type="tel"
+                maxLength={10}
               />
             </div>
             {farmerQuery.trim() && !farmerId && (

@@ -154,7 +154,7 @@ function HistoryPage() {
             }))
         : [];
 
-    return [...entryRows, ...fuelRows].sort((a, b) => +new Date(b.date) - +new Date(a.date));
+    return [...entryRows, ...fuelRows].sort((a, b) => b.date.localeCompare(a.date));
   }, [state, q, filter, dateQ]);
 
   // Group rows into day-buckets, and inject month separators when month changes

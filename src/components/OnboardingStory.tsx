@@ -31,12 +31,12 @@ const SLIDES: Slide[] = [
     blobA: "bg-[#c2410c]/40",
     blobB: "bg-[#7c2d12]/30",
     iconRing: "from-[#f97316] to-[#b91c1c]",
-    headingHi: "कागज़ की डायरी और नुकसान",
-    headingEn: "The Cost of Paper Diaries",
+    headingHi: "कागज़ की डायरी और बड़ा नुकसान",
+    headingEn: "The Danger of Paper Records",
     bodyHi:
-      "• पन्ने फटने, खोने या स्याही मिटने से हर साल हज़ारों का नुकसान होता है।\n• कॉपियों में पुराना हिसाब खोजना और जोड़ना बहुत कठिन होता है।",
+      "एक रिसर्च के अनुसार, कागज़ फटने या खोने से 80% से अधिक ऑपरेटरों का हिसाब मिट जाता है, जिससे हर साल हज़ारों का नुकसान होता है।\nकॉपियों में पुराना हिसाब ढूंढना और जोड़ना बेहद सिरदर्द का काम है।",
     bodyEn:
-      "• Torn pages, ink fading, and lost diaries cost thousands in unrecovered dues.\n• Searching and totaling manual records takes hours of effort.",
+      "Research shows over 80% of tractor operators lose track of calculations due to torn or misplaced paper diaries, causing heavy financial losses.\nFlipping through paper pages to total old balances is a tedious daily headache.",
   },
   {
     Icon: Tractor,
@@ -44,12 +44,12 @@ const SLIDES: Slide[] = [
     blobA: "bg-[#f59e0b]/35",
     blobB: "bg-[#10b981]/30",
     iconRing: "from-[#fbbf24] to-[#f97316]",
-    headingHi: "Khetbook के साथ आसान काम",
-    headingEn: "What Khetbook Does",
+    headingHi: "Khetbook: सच्चा और सुरक्षित साथी",
+    headingEn: "Khetbook: Secure & Offline",
     bodyHi:
-      "✔ 100% ऑफलाइन: बिना इंटरनेट के पूरे खेत में चलेगा।\n✔ ऑटोमैटिक हिसाब: जुताई, हेर्रो, थ्रेशर का सारा काम तुरंत।\n✔ आसान भुगतान: व्हाट्सएप बिल PDF और क्यूआर (QR) कोड से सीधे पैसे पाएं।",
+      "यह ऐप 100% ऑफलाइन है—आपका डेटा सिर्फ आपके फोन में रहेगा, इंटरनेट पर नहीं। इसलिए धोखाधड़ी का कोई खतरा नहीं है।\nबिना इंटरनेट के गहरे खेतों में भी जुताई, हेर्रो और थ्रेशर का सारा हिसाब-किताब सेकंडों में जोड़ेगा।",
     bodyEn:
-      "✔ 100% Offline: Works in deep fields without internet.\n✔ Auto Calculations: Instant ledger math for Jutai, Herro, & Thresher.\n✔ Direct Payments: Share PDF bills and receive money via UPI QR codes.",
+      "This app is 100% offline—your data stays strictly on your phone, never on any cloud. Zero risk of online fraud.\nWorks deep inside fields without internet to compute Jutai, Herro, and Thresher calculations instantly.",
   },
   {
     Icon: UserRound,
@@ -57,12 +57,12 @@ const SLIDES: Slide[] = [
     blobA: "bg-[#22d3ee]/30",
     blobB: "bg-[#34d399]/30",
     iconRing: "from-[#67e8f9] to-[#34d399]",
-    headingHi: "पहचानिए अपने डेवलपर को",
-    headingEn: "Meet the Developer",
+    headingHi: "अपने डेवलपर के बारे में जानें",
+    headingEn: "About Your Developer",
     bodyHi:
-      "• मैं, Krish Tiwari, ट्रैक्टर चालकों की समस्याओं को दूर करने के लिए समर्पित हूँ।\n• Khetbook पूरी तरह से निःशुल्क, सुरक्षित और हमारे देश के सभी चालकों के सम्मान में समर्पित है।",
+      "नमस्ते, मैं Krish Tiwari हूँ। यह ऐप मैंने विशेष रूप से अपने ट्रैक्टर चालक भाइयों के हक और सम्मान की रक्षा के लिए बनाई है।\nयह ऐप हमेशा पूरी तरह से मुफ़्त, विज्ञापन-मुक्त और सुरक्षित रहेगी। यह मेरा आपसे वादा है।",
     bodyEn:
-      "• I'm Krish Tiwari, dedicated to simplifying agro-bookkeeping.\n• Khetbook is 100% free, private, secure, and made for our nation's operators.",
+      "Hello, I am Krish Tiwari. I created this app specifically to protect the hard work and dignity of our tractor operators.\nKhetbook is and will always remain 100% free, private, and ad-free. That is my promise to you.",
   },
 ];
 

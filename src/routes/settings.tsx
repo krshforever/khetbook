@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Download,
@@ -18,6 +18,11 @@ import {
   Github,
   ChevronDown,
   ChevronUp,
+  UserRound,
+  Languages,
+  MessageSquare,
+  Tractor,
+  DatabaseBackup,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useStore } from "@/lib/store";
@@ -45,7 +50,8 @@ export const Route = createFileRoute("/settings")({
 const UNITS: ToolUnit[] = ["बीघा", "घंटे", "क्विंटल", "फेरा"];
 
 function SettingsPage() {
-  const { state, updateSettings, upsertTool, deleteTool, replaceAll } = useStore();
+  const { state, updateSettings, upsertTool, deleteTool, replaceAll, clearSMSLogs } = useStore();
+  const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
 
   function exportBackup() {
@@ -79,7 +85,7 @@ function SettingsPage() {
   return (
     <AppShell title="सेटिंग्स" subtitle="Khetbook — रेट, UPI, बैकअप">
       {/* Profile & UPI */}
-      <Card title="प्रोफ़ाइल और UPI जानकारी (Profile & UPI)" defaultExpanded={true}>
+      <Card title="प्रोफ़ाइल और UPI जानकारी (Profile & UPI)" Icon={UserRound}>
         <Label className="font-hindi">आपका नाम (Your Name)</Label>
         <Input
           value={state.settings.userName ?? ""}
@@ -125,7 +131,7 @@ function SettingsPage() {
       </Card>
 
       {/* Voice */}
-      <Card title="आवाज़ की भाषा">
+      <Card title="आवाज़ की भाषा" Icon={Languages}>
         <div className="grid grid-cols-2 gap-2">
           {(["hi-IN", "en-IN"] as const).map((l) => (
             <button
@@ -140,7 +146,7 @@ function SettingsPage() {
       </Card>
 
       {/* SMS Settings */}
-      <Card title="SMS नोटिफिकेशन्स" defaultExpanded={true}>
+      <Card title="SMS नोटिफिकेशन्स" Icon={MessageSquare}>
         <div className="flex items-center justify-between min-h-14 rounded-2xl border border-border bg-card p-4">
           <div>
             <h4 className="font-hindi text-base font-bold text-foreground">काम सेव होने पर SMS भेजें</h4>
@@ -163,8 +169,48 @@ function SettingsPage() {
         </div>
       </Card>
 
+      {/* SMS History Log */}
+      <Card title="SMS भेजने का इतिहास (SMS Log)" Icon={MessageSquare}>
+        <div className="grid gap-2">
+          {state.smsLogs && state.smsLogs.length > 0 ? (
+            <>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs text-muted-foreground">{state.smsLogs.length} संदेश रिकॉर्ड</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (confirm("सारा SMS इतिहास मिटा दें?")) clearSMSLogs();
+                  }}
+                  className="text-xs text-destructive h-8 px-2"
+                >
+                  लॉग साफ़ करें
+                </Button>
+              </div>
+              <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
+                {state.smsLogs.slice().reverse().map((log) => (
+                  <div key={log.id} className="border border-border rounded-xl p-3 bg-accent/20 text-sm">
+                    <div className="flex justify-between items-start mb-1">
+                      <strong className="font-hindi text-base">{log.farmerName}</strong>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${log.status === "success" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
+                        {log.status === "success" ? "सफल ✓" : "विफल ❌"}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-1">फोन: {log.phone} | {new Date(log.date).toLocaleString("hi-IN")}</div>
+                    <p className="text-xs text-muted-foreground whitespace-pre-line bg-card p-2 rounded-lg border border-border/40 font-mono">{log.message}</p>
+                    {log.error && <div className="text-xs text-destructive mt-1 font-bold">त्रुटि (Error): {log.error}</div>}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="font-hindi text-sm text-center text-muted-foreground py-4">कोई SMS इतिहास नहीं है।</p>
+          )}
+        </div>
+      </Card>
+
       {/* Rates */}
-      <Card title="रेट लिस्ट (Default Rates)">
+      <Card title="रेट लिस्ट (Default Rates)" Icon={Tractor}>
         <ul className="grid gap-2">
           {state.tools.map((t) => (
             <ToolRow key={t.id} tool={t} onSave={upsertTool} onDelete={() => deleteTool(t.id)} />
@@ -193,7 +239,7 @@ function SettingsPage() {
       <UpdatesCard />
 
       {/* Backup */}
-      <Card title="बैकअप / रिस्टोर">
+      <Card title="बैकअप / रिस्टोर" Icon={DatabaseBackup}>
         <p className="font-hindi mb-3 text-sm text-muted-foreground">
           पूरा डेटा JSON फ़ाइल में डाउनलोड करें और बाद में रिस्टोर करें।
         </p>
@@ -207,7 +253,15 @@ function SettingsPage() {
             <Download className="h-5 w-5" /> बैकअप डाउनलोड (.json)
           </Button>
           <Button
-            onClick={() => exportFullLedgerPdf(state)}
+            onClick={async () => {
+              toast.info("PDF तैयार हो रहा है...");
+              try {
+                await exportFullLedgerPdf(state);
+                toast.success("PDF डाउनलोड हुआ ✓");
+              } catch (err: any) {
+                toast.error(err.message || "PDF नहीं बन पाया");
+              }
+            }}
             variant="outline"
             className="font-hindi h-14 text-base font-bold"
           >
@@ -236,13 +290,14 @@ function SettingsPage() {
 
       <BatchEntryCard />
 
-      <Card title="ख़तरा क्षेत्र">
+      <Card title="ख़तरा क्षेत्र" Icon={Trash2}>
         <Button
           variant="destructive"
           onClick={() => {
             if (confirm("सारा डेटा मिटा दें?")) {
               replaceAll(INITIAL_STATE);
               toast.success("सब कुछ रीसेट हो गया");
+              navigate({ to: "/" });
             }
           }}
           className="font-hindi h-14 w-full text-base font-bold"
@@ -260,10 +315,12 @@ function Card({
   title,
   children,
   defaultExpanded = false,
+  Icon,
 }: {
   title: string;
   children: React.ReactNode;
   defaultExpanded?: boolean;
+  Icon?: React.ComponentType<{ className?: string }>;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   return (
@@ -272,7 +329,10 @@ function Card({
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between p-4 text-left focus:outline-none active:bg-accent/40"
       >
-        <h2 className="font-hindi text-lg font-black m-0">{title}</h2>
+        <div className="flex items-center gap-3">
+          {Icon && <Icon className="h-5 w-5 text-primary shrink-0" />}
+          <h2 className="font-hindi text-lg font-black m-0">{title}</h2>
+        </div>
         {expanded ? (
           <ChevronUp className="h-5 w-5 text-muted-foreground transition-transform duration-200" />
         ) : (
@@ -383,7 +443,7 @@ function NotificationsCard() {
   }
 
   return (
-    <Card title="रोज़ का रिमाइंडर (शाम को)">
+    <Card title="रोज़ का रिमाइंडर (शाम को)" Icon={Bell}>
       <p className="font-hindi mb-3 text-sm text-muted-foreground">
         हर रोज़ शाम को एक छोटा रिमाइंडर — "आज का हिसाब लिख लिया?" 10 अलग-अलग संदेशों में से एक।
       </p>
@@ -442,7 +502,7 @@ function UpdatesCard() {
   }
 
   return (
-    <Card title="ऐप अपडेट (नया APK)">
+    <Card title="ऐप अपडेट (नया APK)" Icon={RefreshCw}>
       <p className="font-hindi mb-3 text-sm text-muted-foreground">
         Khetbook open-source है। हर नया APK GitHub Releases पर मिलता है।
       </p>
@@ -547,7 +607,7 @@ function BatchEntryCard() {
   }
 
   return (
-    <Card title="बैच एंट्री (डायरी से कई एंट्री एक साथ)">
+    <Card title="बैच एंट्री (डायरी से कई एंट्री एक साथ)" Icon={Wand2}>
       <p className="font-hindi mb-2 text-sm text-muted-foreground">
         हर लाइन में एक एंट्री — जैसे "रामू 2 बीघा हल दोहर 500 नकद" या "diesel 500".
       </p>

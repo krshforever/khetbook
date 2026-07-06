@@ -41,6 +41,7 @@ export const INITIAL_STATE: AppState = {
   entries: [],
   payments: [],
   fuel: [],
+  smsLogs: [],
 };
 
 export function loadState(): AppState {
