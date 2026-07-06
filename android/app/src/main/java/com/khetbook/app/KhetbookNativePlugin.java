@@ -69,6 +69,39 @@ public class KhetbookNativePlugin extends Plugin {
         }
     }
 
+    @PluginMethod
+    public void checkSMSPermission(PluginCall call) {
+        JSObject ret = new JSObject();
+        if (getPermissionState("sms") == com.getcapacitor.PermissionState.GRANTED) {
+            ret.put("sms", "granted");
+        } else {
+            ret.put("sms", "denied");
+        }
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void requestSMSPermission(PluginCall call) {
+        if (getPermissionState("sms") != com.getcapacitor.PermissionState.GRANTED) {
+            requestPermissionForAlias("sms", call, "smsPermissionCallback");
+        } else {
+            JSObject ret = new JSObject();
+            ret.put("sms", "granted");
+            call.resolve(ret);
+        }
+    }
+
+    @PermissionCallback
+    public void smsPermissionCallback(PluginCall call) {
+        JSObject ret = new JSObject();
+        if (getPermissionState("sms") == com.getcapacitor.PermissionState.GRANTED) {
+            ret.put("sms", "granted");
+        } else {
+            ret.put("sms", "denied");
+        }
+        call.resolve(ret);
+    }
+
     private void sendSmsInternal(String phone, String message, PluginCall call) {
         try {
             SmsManager smsManager = null;

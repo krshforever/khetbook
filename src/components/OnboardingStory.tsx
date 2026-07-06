@@ -149,7 +149,7 @@ export function OnboardingStory() {
     } catch (e) {}
 
     try {
-      const smsStatus = await KhetbookNative.checkPermissions();
+      const smsStatus = await KhetbookNative.checkSMSPermission();
       setSmsState(smsStatus.sms === "granted" ? "granted" : "pending");
     } catch (e) {}
   }
@@ -186,7 +186,7 @@ export function OnboardingStory() {
 
   async function requestSMS() {
     try {
-      const status = await KhetbookNative.requestPermissions({ permissions: ["sms"] });
+      const status = await KhetbookNative.requestSMSPermission();
       if (status.sms === "granted") {
         setSmsState("granted");
         toast.success(lang === "hi" ? "एसएमएस की अनुमति मिल गई ✓" : "SMS permission granted ✓");
