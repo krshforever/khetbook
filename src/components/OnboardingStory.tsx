@@ -604,35 +604,45 @@ export function OnboardingStory() {
                 </div>
 
                 {/* 3. SMS Card */}
-                <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-sm">
-                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-blue-500/20 text-blue-400">
-                    <MessageSquare className="h-6 w-6" />
+                <div className="flex flex-col gap-2 rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="grid h-12 w-12 place-items-center rounded-xl bg-blue-500/20 text-blue-400">
+                      <MessageSquare className="h-6 w-6" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`text-[15px] font-bold ${lang === "hi" ? "font-hindi" : ""}`}>
+                        {t("एसएमएस रसीद (SMS Receipts)", "SMS Receipts")}
+                      </h3>
+                      <p className={`text-xs text-white/60 leading-normal mt-0.5 ${lang === "hi" ? "font-hindi" : ""}`}>
+                        {t("किसान को रसीद का एसएमएस भेजने के लिए (वैकल्पिक)।", "Send transaction updates to farmers automatically (optional).")}
+                      </p>
+                    </div>
+                    <div>
+                      {smsState === "granted" ? (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded-full">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          {t("सक्रिय", "Active")}
+                        </span>
+                      ) : smsState === "denied" ? (
+                        <button onClick={requestSMS} className="flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full">
+                          <XCircle className="h-3.5 w-3.5" />
+                          {t("अस्वीकृत", "Denied")}
+                        </button>
+                      ) : (
+                        <button onClick={requestSMS} className="text-xs font-bold text-[#090b11] bg-white hover:bg-white/90 px-3.5 py-1.5 rounded-full transition-transform active:scale-95 shadow">
+                          {t("अनुमति दें", "Grant")}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className={`text-[15px] font-bold ${lang === "hi" ? "font-hindi" : ""}`}>
-                      {t("एसएमएस रसीद (SMS Receipts)", "SMS Receipts")}
-                    </h3>
-                    <p className={`text-xs text-white/60 leading-normal mt-0.5 ${lang === "hi" ? "font-hindi" : ""}`}>
-                      {t("किसान को रसीद का एसएमएस भेजने के लिए (वैकल्पिक)।", "Send transaction updates to farmers automatically (optional).")}
-                    </p>
-                  </div>
-                  <div>
-                    {smsState === "granted" ? (
-                      <span className="flex items-center gap-1 text-[11px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded-full">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        {t("सक्रिय", "Active")}
-                      </span>
-                    ) : smsState === "denied" ? (
-                      <button onClick={requestSMS} className="flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full">
-                        <XCircle className="h-3.5 w-3.5" />
-                        {t("अस्वीकृत", "Denied")}
-                      </button>
-                    ) : (
-                      <button onClick={requestSMS} className="text-xs font-bold text-[#090b11] bg-white hover:bg-white/90 px-3.5 py-1.5 rounded-full transition-transform active:scale-95 shadow">
-                        {t("अनुमति दें", "Grant")}
-                      </button>
-                    )}
-                  </div>
+                  {smsState === "denied" && (
+                    <div className={`mt-1 text-[11px] text-amber-300 leading-normal border-t border-white/5 pt-1.5 ${lang === "hi" ? "font-hindi" : ""}`}>
+                      {t(
+                        "यदि 'अनुमति दें' बटन नहीं दब रहा है (अवरुद्ध है): फ़ोन सेटिंग्स > ऐप्स > Khetbook में जाएँ, ऊपर 3-डॉट पर टैप करें और 'Allow restricted settings' चालू करें।",
+                        "If the 'Allow' button is greyed out (Blocked): Go to Settings > Apps > Khetbook, tap the 3-dot menu at top-right, and select 'Allow restricted settings'."
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* 4. Notifications Card */}
