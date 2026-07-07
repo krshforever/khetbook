@@ -273,6 +273,7 @@ export function OnboardingStory() {
       userAlias: userAlias.trim() || undefined,
       upiVpa: upiVpa.trim() || undefined,
       merchantName: name.trim() || undefined, // Default merchant name to operator name
+      autoSmsOnSave: smsState === "granted", // Enable auto-SMS by default if permission was granted
       onboardedAt: new Date().toISOString(),
     });
     setShow(false);
