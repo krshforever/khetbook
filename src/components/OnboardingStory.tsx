@@ -106,7 +106,11 @@ export function OnboardingStory() {
           if (hasPerm) {
             const backup = await readLocalBackup();
             if (backup) {
-              setDetectedBackup(backup);
+              replaceAll(backup);
+              toast.success(lang === "hi" ? "हिसाब स्वचालित रूप से रीस्टोर किया गया ✓" : "Ledger restored automatically ✓");
+              setShow(false);
+              setCheckingBackup(false);
+              return;
             }
           }
         } catch (err) {

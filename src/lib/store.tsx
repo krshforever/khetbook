@@ -55,7 +55,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (ready) {
       saveState(state);
-      writeLocalBackup(state);
+      if (state.settings.onboardedAt) {
+        writeLocalBackup(state);
+      }
     }
   }, [state, ready]);
 
